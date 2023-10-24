@@ -16,6 +16,11 @@ const PORT = process.env.PORT || 3000;
 // Parse request body and verifies incoming requests using discord-interactions package
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
+app.get('/test', async function (req, res) {
+  console.log('test endpoint hit');
+  return res.send('test endpoint hit');
+});
+
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  */
