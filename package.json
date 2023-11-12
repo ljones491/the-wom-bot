@@ -1,6 +1,6 @@
 {
   "name": "the-wom-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The official bot of Team Wombat",
   "main": "index.js",
   "scripts": {
@@ -9,6 +9,8 @@
   "author": "Wombat",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.1",
+    "chance": "^1.1.11",
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1"
   }

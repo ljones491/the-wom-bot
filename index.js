@@ -1,4 +1,6 @@
 const { REST, Routes, Client, GatewayIntentBits } = require('discord.js');
+const axios = require('axios');
+var Chance = require('chance');
 require('dotenv').config();
 
 const rest = new REST({ version: '10' }).setToken(process.env['TOKEN']);
@@ -7,6 +9,10 @@ const commands = [
     {
       name: 'wombot-about',
       description: 'Ping the wom-bot for some info'
+    },
+    {
+      name: 'random-insult',
+      description: 'Insult: random. Insultee: also random :)'
     }
   ];
 
@@ -32,7 +38,18 @@ const commands = [
     if (!interaction.isChatInputCommand()) return;
   
     if (interaction.commandName === 'wombot-about') {
-      await interaction.reply('I am the Wom-bot, version 1.0.0');
+      await interaction.reply('I am the Wom-bot, version 1.1.0');
+    } else if (interaction.commandName === 'random-insult') {
+      const insultees = ['Wombat','Falcon','Lynx','Clippy'];
+      const chanceObj = new Chance();
+      const insulteeIdx = chanceObj.integer({min: 0, max: insultees.length-1});
+      const insultee = insultees[insulteeIdx];
+
+      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
+      axios.get(reqUrl).then(async res => {
+        await interaction.reply(res.data.insultText);
+      });
+      
     }
   });
 
