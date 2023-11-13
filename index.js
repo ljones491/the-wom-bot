@@ -40,22 +40,25 @@ const commands = [
     if (interaction.commandName === 'wombot-about') {
       await interaction.reply('I am the Wom-bot, version 1.1.1');
     } else if (interaction.commandName === 'random-insult') {
-      const insultees = ['Wombat','Falcon','Lynx','Clippy'];
-      const chanceObj = new Chance();
-      const insulteeIdx = chanceObj.integer({min: 0, max: insultees.length-1});
-      const insultee = insultees[insulteeIdx];
+      try {
+        const insultees = ['Wombat','Falcon','Lynx','Clippy'];
+        const chanceObj = new Chance();
+        const insulteeIdx = chanceObj.integer({min: 0, max: insultees.length-1});
+        const insultee = insultees[insulteeIdx];
 
-      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
-      axios.get(reqUrl).then(async res => {
-        const embed = new EmbedBuilder()
-          .setColor('#70f8ba')
-          .setTitle(res.data.insultText);
-          // .setDescription(res.data.insultText);
-          await interaction.reply({ embeds: [embed] });
-        // await interaction.reply(res.data.insultText);
+        const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
+        axios.get(reqUrl).then(async res => {
+          const embed = new EmbedBuilder()
+            .setColor('#70f8ba')
+            .setTitle(res.data.insultText);
+            // .setDescription(res.data.insultText);
+            await interaction.reply({ embeds: [embed] });
+          // await interaction.reply(res.data.insultText);
 
-      });
-      
+        });
+      } catch {
+
+      }      
     }
   });
 
