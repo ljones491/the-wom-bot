@@ -38,7 +38,7 @@ const commands = [
     if (!interaction.isChatInputCommand()) return;
   
     if (interaction.commandName === 'wombot-about') {
-      await interaction.reply('I am the Wom-bot, version 1.1.0');
+      await interaction.reply('I am the Wom-bot, version 1.1.1');
     } else if (interaction.commandName === 'random-insult') {
       const insultees = ['Wombat','Falcon','Lynx','Clippy'];
       const chanceObj = new Chance();
