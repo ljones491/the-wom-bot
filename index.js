@@ -53,11 +53,15 @@ const commands = [
             .setTitle(res.data.insultText);
             // .setDescription(res.data.insultText);
             await interaction.reply({ embeds: [embed] });
-          // await interaction.reply(res.data.insultText);
-
+        }).catch(httpErr => {
+          let message = 'The http code didnt work today';
+          if (httpErr.message) {
+            message += ': ' + httpErr.message;
+          }
+          interaction.reply(message);
         });
-      } catch {
-
+      } catch (error) {
+        interaction.reply('The code didnt work today');
       }      
     }
   });
