@@ -48,11 +48,15 @@ const commands = [
         const insultee = insultees[insulteeIdx];
 
         const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
-        axios.get(reqUrl).then(async res => {
+        axios.get(reqUrl, {
+          headers: {
+            'client-id': 'the-wom-bot',
+            'client-secret': process.env['INSULTS_API_SECRET']
+          }
+        }).then(async res => {
           const embed = new EmbedBuilder()
             .setColor('#70f8ba')
             .setTitle(res.data.insultText);
-            // .setDescription(res.data.insultText);
             interaction.editReply({ embeds: [embed] });
         }).catch(httpErr => {
           let message = 'The http code didnt work today';
