@@ -1,4 +1,4 @@
-const { REST, Routes, Client, GatewayIntentBits } = require('discord.js');
+const { REST, Routes, Client, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 var Chance = require('chance');
 require('dotenv').config();
@@ -47,7 +47,13 @@ const commands = [
 
       const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
       axios.get(reqUrl).then(async res => {
-        await interaction.reply(res.data.insultText);
+        const embed = new EmbedBuilder()
+          .setColor('#70f8ba')
+          .setTitle(res.data.insultText);
+          // .setDescription(res.data.insultText);
+          await interaction.reply({ embeds: [embed] });
+        // await interaction.reply(res.data.insultText);
+
       });
       
     }
