@@ -55,7 +55,7 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'wombot-about') {
-    await interaction.reply('I am the Wom-bot, version 1.2.1. I let you get random insults and create them. The insults have pictures now.');
+    await interaction.reply('I am the Wom-bot, version 1.2.2. I let you get random insults and create them. The insults have pictures and user colors now.');
   } else if (interaction.commandName === 'random-insult') {
     try {
       await interaction.deferReply({ ephemeral: false });
@@ -71,7 +71,7 @@ client.on('interactionCreate', async interaction => {
       }).then(async res => {
         const embed = new EmbedBuilder()
           .setThumbnail(insulteeObj.user.displayAvatarURL())
-          .setColor('#70f8ba')
+          .setColor(insulteeObj.displayColor)
           .setTitle(res.data.insultText);
         interaction.editReply({ embeds: [embed] });
       }).catch(httpErr => {
