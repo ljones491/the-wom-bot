@@ -6,69 +6,114 @@ require('dotenv').config();
 const rest = new REST({ version: '10' }).setToken(process.env['TOKEN']);
 
 const commands = [
-    {
-      name: 'wombot-about',
-      description: 'Ping the wom-bot for some info'
-    },
-    {
-      name: 'random-insult',
-      description: 'Insult: random. Insultee: also random :)'
-    }
-  ];
+  {
+    name: 'wombot-about',
+    description: 'Ping the wom-bot for some info'
+  },
+  {
+    name: 'random-insult',
+    description: 'Insult: random. Insultee: also random :)'
+  },
+  {
+    name: 'give-insult',
+    description: 'Supply the bot with a new insult. Careful, it could be used against you',
+    options: [
+      {
+        type: 3,
+        name: 'new_insult',
+        description: 'the new insult',
+        required: true
+      }
+    ]
+  }
+];
 
-(async () => {
+const client = new Client({ intents: [] });
+
+client.on('ready', async () => {
+  console.log(`Logged in as ${client.user.tag}, ${client.user.id}`);
+
+  try {
+    console.log('Started refreshing application (/) commands');
+
+    console.log(commands.length);
+    await rest.put(Routes.applicationCommands(process.env['APP_ID']), { body: commands });
+
+    console.log('Successfully reloaded application commands');
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === 'wombot-about') {
+    await interaction.reply('I am the Wom-bot, version 1.2.0. I let you get random insults and create them.');
+  } else if (interaction.commandName === 'random-insult') {
     try {
-      console.log('Started refreshing application (/) commands');
-  
-      await rest.put(Routes.applicationCommands(process.env['APP_ID']), { body: commands });
-  
-      console.log('Successfully reloaded application commands');
+      await interaction.deferReply({ ephemeral: false });
+      const insultees = ['Wombat', 'Falcon', 'Lynx', 'Clippy'];
+      const chanceObj = new Chance();
+      const insulteeIdx = chanceObj.integer({ min: 0, max: insultees.length - 1 });
+      const insultee = insultees[insulteeIdx];
+
+      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
+      axios.get(reqUrl, {
+        headers: {
+          'client-id': 'the-wom-bot',
+          'client-secret': process.env['INSULTS_API_SECRET']
+        }
+      }).then(async res => {
+        const embed = new EmbedBuilder()
+          .setColor('#70f8ba')
+          .setTitle(res.data.insultText);
+        interaction.editReply({ embeds: [embed] });
+      }).catch(httpErr => {
+        let message = 'The http code didnt work today';
+        if (httpErr.message) {
+          message += ': ' + httpErr.message;
+        }
+        interaction.editReply(message);
+      });
     } catch (error) {
-      console.error(error);
+      interaction.editReply('The code didnt work today');
     }
-  })();
-  
-  const client = new Client({ intents: [] });
-  
-  client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}, ${client.user.id}`);
-  });
+  } else if (interaction.commandName === 'give-insult') {
+    try {
+      await interaction.deferReply({ ephemeral: false });
 
-  client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-  
-    if (interaction.commandName === 'wombot-about') {
-      await interaction.reply('I am the Wom-bot, version 1.1.1');
-    } else if (interaction.commandName === 'random-insult') {
-      try {
-        await interaction.deferReply({ ephemeral: false });
-        const insultees = ['Wombat','Falcon','Lynx','Clippy'];
-        const chanceObj = new Chance();
-        const insulteeIdx = chanceObj.integer({min: 0, max: insultees.length-1});
-        const insultee = insultees[insulteeIdx];
+      
+      const newInsultTemplate = interaction.options.getString('new_insult');
+      if (!newInsultTemplate.includes('{{i}}') && !newInsultTemplate.includes('{{insultee}}')) {
+        interaction.editReply(`insult_template must include an {{insultee}}/{{i}} placeholder!!! That's how this whole things works, idiot!`);
+        return;
+      }
 
-        const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
-        axios.get(reqUrl, {
-          headers: {
-            'client-id': 'the-wom-bot',
-            'client-secret': process.env['INSULTS_API_SECRET']
-          }
-        }).then(async res => {
-          const embed = new EmbedBuilder()
-            .setColor('#70f8ba')
-            .setTitle(res.data.insultText);
-            interaction.editReply({ embeds: [embed] });
-        }).catch(httpErr => {
-          let message = 'The http code didnt work today';
-          if (httpErr.message) {
-            message += ': ' + httpErr.message;
-          }
-          interaction.editReply(message);
-        });
-      } catch (error) {
-        interaction.editReply('The code didnt work today');
-      }      
+      const newInsultTemplateValue = newInsultTemplate.replace('{{i}}','{{insultee}}');
+
+      const reqUrl = `${process.env['INSULTS_API']}`;
+      const reqBody = {
+        insultTemplate: newInsultTemplateValue
+      };
+      axios.post(reqUrl, reqBody, {
+        headers: {
+          'client-id': 'the-wom-bot',
+          'client-secret': process.env['INSULTS_API_SECRET']
+        }
+      }).then((httpResponse) => {
+        console.log(httpResponse);
+        interaction.editReply(`Insult added, may it wreck your enemies one day`);
+      }).catch((httpError) => {
+        console.log(httpError);
+        interaction.editReply('The http code didnt work today');
+      });
     }
-  });
+    catch (error) {
+      console.log(error);
+      interaction.editReply('The code didnt work today');
+    }
+  }
+});
 
-  client.login(process.env['TOKEN']);
+client.login(process.env['TOKEN']);
