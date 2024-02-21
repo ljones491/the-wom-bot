@@ -71,7 +71,7 @@ client.on('interactionCreate', async interaction => {
       }).then(async res => {
         const embed = new EmbedBuilder()
           .setThumbnail(insulteeObj.user.displayAvatarURL())
-          .setColor(insulteeObj.displayColor)
+          .setColor(insulteeObj.user.accentColor)
           .setTitle(res.data.insultText);
         interaction.editReply({ embeds: [embed] });
       }).catch(httpErr => {
