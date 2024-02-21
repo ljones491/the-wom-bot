@@ -55,23 +55,25 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'wombot-about') {
-    await interaction.reply('I am the Wom-bot, version 1.2.2. I let you get random insults and create them. The insults have pictures and user colors now.');
+    await interaction.reply('I am the Wom-bot, version 1.2.2. I let you get random insults and create them. The insults have pictures and random colors now.');
   } else if (interaction.commandName === 'random-insult') {
     try {
       await interaction.deferReply({ ephemeral: false });
       const members = interaction.guild.members.cache.filter(member => !member.user.bot && member.user.id != '1102741835174117406'); // Filter out bots
       const insulteeObj = members.random();      
+      const rndColor =  '#'+(~~(Math.random()*8**8)).toString(16).padStart(6,0);
 
-      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insulteeObj.nickname}`;
+      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insulteeObj.displayName}`;
       axios.get(reqUrl, {
         headers: {
           'client-id': 'the-wom-bot',
           'client-secret': process.env['INSULTS_API_SECRET']
         }
       }).then(async res => {
+        
         const embed = new EmbedBuilder()
           .setThumbnail(insulteeObj.user.displayAvatarURL())
-          .setColor(insulteeObj.user.accentColor)
+          .setColor(rndColor)
           .setTitle(res.data.insultText);
         interaction.editReply({ embeds: [embed] });
       }).catch(httpErr => {
@@ -82,7 +84,7 @@ client.on('interactionCreate', async interaction => {
         interaction.editReply(message);
       });
     } catch (error) {
-      interaction.editReply('The code didnt work today');
+      interaction.editReply('The code didnt work today ' + error);
     }
   } else if (interaction.commandName === 'give-insult') {
     try {
