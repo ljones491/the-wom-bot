@@ -45,20 +45,24 @@ client.on('ready', async () => {
   }
 });
 
+// const embed = embedBuilder
+//                 .setThumbnail(insultee.user.avatarURL())
+//                 .setColor(insultee.displayColor)
+//                 .setTitle(insult)
+//             interaction.editReply({ embeds: [embed] });
+
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'wombot-about') {
-    await interaction.reply('I am the Wom-bot, version 1.2.0. I let you get random insults and create them.');
+    await interaction.reply('I am the Wom-bot, version 1.2.1. I let you get random insults and create them. The insults have pictures now.');
   } else if (interaction.commandName === 'random-insult') {
     try {
       await interaction.deferReply({ ephemeral: false });
-      const insultees = ['Wombat', 'Falcon', 'Lynx', 'Clippy'];
-      const chanceObj = new Chance();
-      const insulteeIdx = chanceObj.integer({ min: 0, max: insultees.length - 1 });
-      const insultee = insultees[insulteeIdx];
+      const members = interaction.guild.members.cache.filter(member => !member.user.bot && member.user.id != '1102741835174117406'); // Filter out bots
+      const insulteeObj = members.random();      
 
-      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insultee}`;
+      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insulteeObj.nickname}`;
       axios.get(reqUrl, {
         headers: {
           'client-id': 'the-wom-bot',
@@ -66,6 +70,7 @@ client.on('interactionCreate', async interaction => {
         }
       }).then(async res => {
         const embed = new EmbedBuilder()
+          .setThumbnail(insulteeObj.user.displayAvatarURL())
           .setColor('#70f8ba')
           .setTitle(res.data.insultText);
         interaction.editReply({ embeds: [embed] });
