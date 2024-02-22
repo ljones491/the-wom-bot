@@ -45,17 +45,11 @@ client.on('ready', async () => {
   }
 });
 
-// const embed = embedBuilder
-//                 .setThumbnail(insultee.user.avatarURL())
-//                 .setColor(insultee.displayColor)
-//                 .setTitle(insult)
-//             interaction.editReply({ embeds: [embed] });
-
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'wombot-about') {
-    await interaction.reply('I am the Wom-bot, version 1.2.2. I let you get random insults and create them. The insults have pictures and random colors now.');
+    await interaction.reply('I am the Wom-bot, version 1.2.3.\nI let you get random insults and create them. The insults have pictures and random colors now.\nCreating memes is in beta.');
   } else if (interaction.commandName === 'random-insult') {
     try {
       await interaction.deferReply({ ephemeral: false });

@@ -1,6 +1,6 @@
 {
   "name": "the-wom-bot",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "The official bot of Team Wombat",
   "main": "index.js",
   "scripts": {
