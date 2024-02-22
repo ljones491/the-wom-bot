@@ -1,4 +1,4 @@
-const { REST, Routes, Client, EmbedBuilder } = require('discord.js');
+const { REST, Routes, Client, EmbedBuilder, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 var Chance = require('chance');
 require('dotenv').config();
@@ -25,10 +25,39 @@ const commands = [
         required: true
       }
     ]
+  },
+  {
+    name: 'mystery-command',
+    description: 'what will this be hmmm?',
+    options: [
+      {
+        type: 3,
+        name: 'arg_1',
+        description: 'mystery arg 1',
+        required: true
+      },
+      {
+        type: 3,
+        name: 'arg_2',
+        description: 'mystery arg 3',
+        required: true
+      },
+      {
+        type: 3,
+        name: 'arg_3',
+        description: 'mystery arg 3',
+        required: true
+      },
+    ]
   }
 ];
 
-const client = new Client({ intents: [] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers
+  ]
+});
 
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}, ${client.user.id}`);
@@ -36,10 +65,9 @@ client.on('ready', async () => {
   try {
     console.log('Started refreshing application (/) commands');
 
-    console.log(commands.length);
     await rest.put(Routes.applicationCommands(process.env['APP_ID']), { body: commands });
 
-    console.log('Successfully reloaded application commands');
+    console.log(`Successfully reloaded ${commands.length} application commands`);
   } catch (error) {
     console.error(error);
   }
@@ -49,25 +77,34 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'wombot-about') {
-    await interaction.reply('I am the Wom-bot, version 1.2.3.\nI let you get random insults and create them. The insults have pictures and random colors now.\nCreating memes is in beta.');
+    await interaction.reply('I am the Wom-bot, version 1.2.3.\nI let you get random insults and create them. The insults have pictures and random colors now.\nFixing member list.');
   } else if (interaction.commandName === 'random-insult') {
     try {
       await interaction.deferReply({ ephemeral: false });
-      const members = interaction.guild.members.cache.filter(member => !member.user.bot && member.user.id != '1102741835174117406'); // Filter out bots
-      const insulteeObj = members.random();      
-      const rndColor =  '#'+(~~(Math.random()*8**8)).toString(16).padStart(6,0);
+      const fetchResult = await interaction.guild.members.fetch();
 
-      const reqUrl = `${process.env['INSULTS_API']}?insultee=${insulteeObj.displayName}`;
+      const userInfo = fetchResult.filter(x => !x.user.bot && x.user.id != '1102741835174117406').mapValues(x => {
+        return {
+          displayName: x.displayName,
+          color: x.displayHexColor,
+          imageUrl: x.user.displayAvatarURL()
+        }
+      });
+
+      var chance = new Chance();
+      const rndIdx = chance.integer({ min: 0, max: userInfo.size - 1 });
+      const randomMember = userInfo.at(rndIdx);
+
+      const reqUrl = `${process.env['INSULTS_API']}?insultee=${randomMember.displayName}`;
       axios.get(reqUrl, {
         headers: {
           'client-id': 'the-wom-bot',
           'client-secret': process.env['INSULTS_API_SECRET']
         }
       }).then(async res => {
-        
         const embed = new EmbedBuilder()
-          .setThumbnail(insulteeObj.user.displayAvatarURL())
-          .setColor(rndColor)
+          .setThumbnail(randomMember.imageUrl)
+          .setColor(randomMember.color)
           .setTitle(res.data.insultText);
         interaction.editReply({ embeds: [embed] });
       }).catch(httpErr => {
@@ -84,14 +121,13 @@ client.on('interactionCreate', async interaction => {
     try {
       await interaction.deferReply({ ephemeral: false });
 
-      
       const newInsultTemplate = interaction.options.getString('new_insult');
       if (!newInsultTemplate.includes('{{i}}') && !newInsultTemplate.includes('{{insultee}}')) {
         interaction.editReply(`insult_template must include an {{insultee}}/{{i}} placeholder!!! That's how this whole things works, idiot!`);
         return;
       }
 
-      const newInsultTemplateValue = newInsultTemplate.replace('{{i}}','{{insultee}}');
+      const newInsultTemplateValue = newInsultTemplate.replace('{{i}}', '{{insultee}}');
 
       const reqUrl = `${process.env['INSULTS_API']}`;
       const reqBody = {
@@ -103,7 +139,6 @@ client.on('interactionCreate', async interaction => {
           'client-secret': process.env['INSULTS_API_SECRET']
         }
       }).then((httpResponse) => {
-        console.log(httpResponse);
         interaction.editReply(`Insult added, may it wreck your enemies one day`);
       }).catch((httpError) => {
         console.log(httpError);
