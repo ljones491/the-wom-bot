@@ -40,13 +40,13 @@ const commands = [
         type: 3,
         name: 'arg_2',
         description: 'mystery arg 3',
-        required: true
+        required: false
       },
       {
         type: 3,
         name: 'arg_3',
         description: 'mystery arg 3',
-        required: true
+        required: false
       },
     ]
   }
@@ -149,6 +149,9 @@ client.on('interactionCreate', async interaction => {
       console.log(error);
       interaction.editReply('The code didnt work today');
     }
+  } else if (interaction.commandName === 'mystery-command') {
+    // MEME-age
+    interaction.reply('ooh what could this be?');
   }
 });
 
