@@ -2,55 +2,11 @@ const { REST, Routes, Client, EmbedBuilder, GatewayIntentBits } = require('disco
 const axios = require('axios');
 var Chance = require('chance');
 require('dotenv').config();
+const fs = require('fs');
+const { GET_COMMANDS } = require('./commands');
 
 const rest = new REST({ version: '10' }).setToken(process.env['TOKEN']);
-
-const commands = [
-  {
-    name: 'wombot-about',
-    description: 'Ping the wom-bot for some info'
-  },
-  {
-    name: 'random-insult',
-    description: 'Insult: random. Insultee: also random :)'
-  },
-  {
-    name: 'give-insult',
-    description: 'Supply the bot with a new insult. Careful, it could be used against you',
-    options: [
-      {
-        type: 3,
-        name: 'new_insult',
-        description: 'the new insult',
-        required: true
-      }
-    ]
-  },
-  {
-    name: 'mystery-command',
-    description: 'what will this be hmmm?',
-    options: [
-      {
-        type: 3,
-        name: 'arg_1',
-        description: 'mystery arg 1',
-        required: true
-      },
-      {
-        type: 3,
-        name: 'arg_2',
-        description: 'mystery arg 3',
-        required: false
-      },
-      {
-        type: 3,
-        name: 'arg_3',
-        description: 'mystery arg 3',
-        required: false
-      },
-    ]
-  }
-];
+let TEMPLATES_CONFIG = {};
 
 const client = new Client({
   intents: [
@@ -64,7 +20,10 @@ client.on('ready', async () => {
 
   try {
     console.log('Started refreshing application (/) commands');
+    const templatesJSON = fs.readFileSync('templates.json', { encoding: 'utf8', flag: 'r' });
+    TEMPLATES_CONFIG = JSON.parse(templatesJSON);
 
+    const commands = GET_COMMANDS(TEMPLATES_CONFIG);
     await rest.put(Routes.applicationCommands(process.env['APP_ID']), { body: commands });
 
     console.log(`Successfully reloaded ${commands.length} application commands`);
@@ -73,11 +32,55 @@ client.on('ready', async () => {
   }
 });
 
+function sanitizeMemeText(inputMemeText) {
+  let sanitizedMemeText = '';
+  for (const inputChar of inputMemeText) {
+    switch (inputChar) {
+      case ' ':
+        sanitizedMemeText += '_';
+        break;
+      case '?':
+        sanitizedMemeText += '~q';
+        break;
+      case '&':
+        sanitizedMemeText += '~a';
+        break;
+      case '%':
+        sanitizedMemeText += '~p';
+        break;
+      case '#':
+        sanitizedMemeText += '~h';
+        break;
+      // case '/':
+      //   sanitizedMemeText += '~s';
+      //   break;
+      case '\\':
+        sanitizedMemeText += '~b';
+        break;
+      case '<':
+        sanitizedMemeText += '~l';
+        break;
+      case '>':
+        sanitizedMemeText += '~g';
+        break;
+      case `"`:
+        sanitizedMemeText += `''`;
+        break;
+      default:
+        sanitizedMemeText += inputChar;
+        break;
+    }
+  }
+  
+  return sanitizedMemeText;
+
+}
+
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'wombot-about') {
-    await interaction.reply('I am the Wom-bot, version 1.2.3.\nI let you get random insults and create them. The insults have pictures and random colors now.\nFixing member list.');
+    await interaction.reply('I am the Wom-bot, version 1.2.3.\nI let you get random insults and create them. The insults have pictures and random colors now.\nbuild-a-meme command being developed.');
   } else if (interaction.commandName === 'random-insult') {
     try {
       await interaction.deferReply({ ephemeral: false });
@@ -142,16 +145,40 @@ client.on('interactionCreate', async interaction => {
         interaction.editReply(`Insult added, may it wreck your enemies one day`);
       }).catch((httpError) => {
         console.log(httpError);
-        interaction.editReply('The http code didnt work today');
+        interaction.editReply('The http code didnt work today: ' + httpError);
       });
     }
     catch (error) {
       console.log(error);
-      interaction.editReply('The code didnt work today');
+      interaction.editReply('The code didnt work today: ' + error);
     }
-  } else if (interaction.commandName === 'mystery-command') {
+  } else if (interaction.commandName === 'build-a-meme') {
+    await interaction.deferReply({ ephemeral: false });
     // MEME-age
-    interaction.reply('ooh what could this be?');
+    try {
+      const memeTemplate = interaction.options.getString('template');
+      const templateChoice = TEMPLATES_CONFIG.find(tc => tc.id === memeTemplate);
+      if (!templateChoice) {
+        interaction.editReply(`${memeTemplate} does not match a template choice, you asshole`);
+        return;
+      }
+
+      let fileExtension = '.png';
+      if (templateChoice.styles.find(st => st === 'animated')) {
+        fileExtension = '.gif';
+      }
+
+      const topTextArg = interaction.options.getString('top_text');
+      const bottomTextArg = interaction.options.getString('bottom_text');
+      const topText = topTextArg ? sanitizeMemeText(topTextArg) : '_';
+      const bottomText = bottomTextArg ? sanitizeMemeText(bottomTextArg) : '_';
+      const requestURL = `https://api.memegen.link/images/${memeTemplate}/${topText}/${bottomText}${fileExtension}`;
+      const embed = new EmbedBuilder().setImage(requestURL)
+        .setTitle(templateChoice.name).setDescription(templateChoice.id);
+      await interaction.editReply({ embeds: [embed] });
+    } catch (error) {
+      interaction.editReply('The code didnt work today ' + error);
+    }
   }
 });
 
